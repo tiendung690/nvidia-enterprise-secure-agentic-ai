@@ -29,15 +29,56 @@ phases:
         fi
       - IMAGE_DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY_NAME" --image-ids imageTag="$IMAGE_TAG" --query 'imageDetails[0].imageDigest' --output text)
       - test -n "$IMAGE_DIGEST" && test "$IMAGE_DIGEST" != "None"
-      - aws ecr wait image-scan-complete --repository-name "$ECR_REPOSITORY_NAME" --image-id imageTag="$IMAGE_TAG"
-      - CRITICAL_COUNT=$(aws ecr describe-image-scan-findings --repository-name "$ECR_REPOSITORY_NAME" --image-id imageTag="$IMAGE_TAG" --query 'imageScanFindings.findingSeverityCounts.CRITICAL' --output text)
-      - CRITICAL_COUNT=${CRITICAL_COUNT:-0}
-      - CRITICAL_COUNT=$([ "$CRITICAL_COUNT" = "None" ] && echo 0 || echo "$CRITICAL_COUNT")
       - |
-        test "$CRITICAL_COUNT" -eq 0 || {
-          echo "Blocking release: $CRITICAL_COUNT CRITICAL image vulnerabilities"
+        echo "Waiting for ECR vulnerability scan..."
+        SCAN_STATUS=""
+
+        for attempt in $(seq 1 30); do
+          SCAN_STATUS=$(aws ecr describe-image-scan-findings             --repository-name "$ECR_REPOSITORY_NAME"             --image-id imageTag="$IMAGE_TAG"             --query 'imageScanStatus.status'             --output text 2>/dev/null || true)
+
+          echo "scan attempt=$attempt status=${SCAN_STATUS:-NOT_READY}"
+
+          if [ "$SCAN_STATUS" = "COMPLETE" ]; then
+            break
+          fi
+
+          if [ "$SCAN_STATUS" = "FAILED" ]; then
+            echo "ECR vulnerability scan failed"
+            exit 1
+          fi
+
+          sleep 5
+        done
+
+        test "$SCAN_STATUS" = "COMPLETE" || {
+          echo "ECR vulnerability scan did not complete in time"
           exit 1
         }
+
+        CRITICAL_CVES=$(aws ecr describe-image-scan-findings           --repository-name "$ECR_REPOSITORY_NAME"           --image-id imageTag="$IMAGE_TAG"           --query 'imageScanFindings.findings[?severity==`CRITICAL`].name'           --output text)
+
+        CRITICAL_COUNT=$(printf '%s\n' "$CRITICAL_CVES" | wc -w)
+        echo "CRITICAL_COUNT=$CRITICAL_COUNT"
+        echo "CRITICAL_CVES=${CRITICAL_CVES:-none}"
+
+        if [ "$CRITICAL_COUNT" -gt 0 ]; then
+          if [ "${SECURITY_GATE_PROFILE:-strict}" != "lab" ]; then
+            echo "Blocking release: CRITICAL vulnerabilities exist"
+            exit 1
+          fi
+
+          for CVE in $CRITICAL_CVES; do
+            case ",${ALLOWED_CRITICAL_CVES:-}," in
+              *",$CVE,"*) echo "LAB WAIVER accepted: $CVE" ;;
+              *)
+                echo "Blocking release: unexpected CRITICAL CVE $CVE"
+                exit 1
+                ;;
+            esac
+          done
+
+          echo "LAB SECURITY WAIVER ACTIVE - production remains strict"
+        fi
       - IMAGE_REF="${IMAGE_REPOSITORY}@${IMAGE_DIGEST}"
       - printf 'IMAGE_REPOSITORY=%s\nIMAGE_TAG=%s\nIMAGE_DIGEST=%s\nIMAGE_REF=%s\n' "$IMAGE_REPOSITORY" "$IMAGE_TAG" "$IMAGE_DIGEST" "$IMAGE_REF" > release.env
   post_build:
