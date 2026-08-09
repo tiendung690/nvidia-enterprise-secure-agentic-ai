@@ -33,7 +33,11 @@ phases:
       - CRITICAL_COUNT=$(aws ecr describe-image-scan-findings --repository-name "$ECR_REPOSITORY_NAME" --image-id imageTag="$IMAGE_TAG" --query 'imageScanFindings.findingSeverityCounts.CRITICAL' --output text)
       - CRITICAL_COUNT=${CRITICAL_COUNT:-0}
       - CRITICAL_COUNT=$([ "$CRITICAL_COUNT" = "None" ] && echo 0 || echo "$CRITICAL_COUNT")
-      - test "$CRITICAL_COUNT" -eq 0 || { echo "Blocking release: $CRITICAL_COUNT CRITICAL image vulnerabilities"; exit 1; }
+      - |
+        test "$CRITICAL_COUNT" -eq 0 || {
+          echo "Blocking release: $CRITICAL_COUNT CRITICAL image vulnerabilities"
+          exit 1
+        }
       - IMAGE_REF="${IMAGE_REPOSITORY}@${IMAGE_DIGEST}"
       - printf 'IMAGE_REPOSITORY=%s\nIMAGE_TAG=%s\nIMAGE_DIGEST=%s\nIMAGE_REF=%s\n' "$IMAGE_REPOSITORY" "$IMAGE_TAG" "$IMAGE_DIGEST" "$IMAGE_REF" > release.env
   post_build:
