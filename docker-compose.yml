@@ -1,0 +1,125 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: agentic_ai
+      POSTGRES_USER: agentic_admin
+      POSTGRES_PASSWORD: agentic_admin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentic_admin -d agentic_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./ops/sql:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+
+  app:
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /app/data
+      COURSE_DATA_DIR: /app/data/course
+      PAPERS_DATA_DIR: /app/data/papers
+      STORAGE_DIR: /app/storage
+      DOCUMENT_SECURITY_MANIFEST: /app/data/security-manifest.json
+      OPERATIONAL_ORDERS_FILE: /app/data/operational/orders.json
+      DELTA_WAREHOUSE_ROOT: /app/data/lakehouse/dcea_medallion.db
+      AUDIT_LOG_PATH: /app/storage/audit/security-audit.jsonl
+      TRACE_LOG_PATH: /app/storage/traces/agent-runs.jsonl
+      AUTO_INGEST: "false"
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - rag_storage:/app/storage
+      - ./data:/app/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "on-failure:3"
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  ingest:
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /app/data
+      COURSE_DATA_DIR: /app/data/course
+      PAPERS_DATA_DIR: /app/data/papers
+      STORAGE_DIR: /app/storage
+      DOCUMENT_SECURITY_MANIFEST: /app/data/security-manifest.json
+      OPERATIONAL_ORDERS_FILE: /app/data/operational/orders.json
+      AUDIT_LOG_PATH: /app/storage/audit/security-audit.jsonl
+      TRACE_LOG_PATH: /app/storage/traces/agent-runs.jsonl
+      AUTO_INGEST: "false"
+    entrypoint: ["agentic-rag", "ingest"]
+    command: ["--recreate"]
+    volumes:
+      - rag_storage:/app/storage
+      - ./data:/app/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["tools"]
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["observability"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    profiles: ["observability"]
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  rag_storage:
+  postgres_data:
+  grafana_data:

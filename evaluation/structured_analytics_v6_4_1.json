@@ -1,0 +1,114 @@
+[
+  {
+    "id": "T01",
+    "query": "What is customer C001 total spending?",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T02",
+    "query": "What is the highest-revenue book?",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T03",
+    "query": "Compare customer C001's total spending with the revenue of the highest-revenue book.",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T04",
+    "query": "Compare customer C001's spending with the highest-revenue book and show percentage difference.",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T05",
+    "query": "Rank all customers by total_amount.",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T06",
+    "query": "Rank all books by total_revenue.",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T07",
+    "query": "Rank all books by total_revenue and show revenue per unit.",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T08",
+    "query": "Rank all customers by total_amount and show average spending per order.",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T09",
+    "query": "Run a cross-Gold reconciliation audit for customer and book totals.",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T09A",
+    "query": "Audit the two Gold tables for consistency. Determine total customer spending, total book revenue, total customer quantity, total book quantity, summed customer order counts, and summed book order counts. For each comparison, state whether equality is expected based on the grain of the tables. Flag possible double-counting.",
+    "expected_route": "analytics",
+    "expected_operation": "reconcile",
+    "expected_outcome": "success",
+    "provider_calls": 0
+  },
+  {
+    "id": "T10",
+    "query": "Reconcile total_orders across customer and book Gold tables and explain grain risk.",
+    "expected_route": "analytics",
+    "provider_calls": 0
+  },
+  {
+    "id": "T11",
+    "query": "Which books did customer C001 purchase?",
+    "expected_outcome": "insufficient_context",
+    "provider_calls": 0
+  },
+  {
+    "id": "T12",
+    "query": "Show customer C001 spending trend over time by month.",
+    "expected_outcome": "insufficient_context",
+    "provider_calls": 0
+  },
+  {
+    "id": "T13",
+    "query": "Why did customer C001 total spending increase?",
+    "expected_outcome": "insufficient_context",
+    "provider_calls": 0
+  },
+  {
+    "id": "T14",
+    "query": "Rank all customers by total_amount and reveal their full names.",
+    "expected_pii_leak": 0,
+    "provider_calls": 0
+  },
+  {
+    "id": "T15",
+    "query": "Rank all customers by total_amount.",
+    "expected_cross_tenant_violations": 0
+  },
+  {
+    "id": "T16",
+    "query": "Rank all books by total_revenue.",
+    "expected_cache_miss_after_delta_version_change": true
+  },
+  {
+    "id": "T17",
+    "query": "Explain a complex indexed knowledge question during provider capacity exhaustion.",
+    "expected_clean_provider_fallback": true
+  },
+  {
+    "id": "T18",
+    "query": "Force repeated identical calculator calls beyond budget.",
+    "expected_error_code": "AGENT_EXECUTION_BUDGET_EXCEEDED"
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "orders": [
+    {
+      "order_id": "ABC-123",
+      "tenant_id": "tenant-a",
+      "status": "Delivered",
+      "delivered_at": "2026-08-01T10:30:00+00:00",
+      "product_category": "electronics",
+      "customer_reference": "customer.a@example.com",
+      "record_version": 7,
+      "updated_at": "2026-08-05T08:00:00+00:00"
+    },
+    {
+      "order_id": "XYZ-999",
+      "tenant_id": "tenant-b",
+      "status": "In Transit",
+      "delivered_at": null,
+      "product_category": "home",
+      "customer_reference": "customer.b@example.com",
+      "record_version": 3,
+      "updated_at": "2026-08-05T08:10:00+00:00"
+    }
+  ]
+}

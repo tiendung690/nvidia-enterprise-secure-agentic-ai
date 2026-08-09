@@ -1,0 +1,51 @@
+Evaluating Retrieval Quality in Retrieval-Augmented Generation
+
+Date: July 14-18, 2024 (SIGIR '24)
+Authors: Alireza Salemi and Hamed Zamani
+Affiliation: University of Massachusetts Amherst
+Contact: asalemi@cs.umass.edu, zamani@cs.umass.edu
+
+ABSTRACT
+
+Evaluating retrieval-augmented generation (RAG) presents challenges, particularly for the retrieval models within these systems. Traditional end-to-end evaluation methods are computationally expensive. Furthermore, evaluating the retrieval model's performance based on query-document relevance labels shows a small correlation with the RAG system's downstream performance. The paper proposes a novel evaluation approach, **eRAG**, where each document in the retrieval list is individually utilized by the large language model (LLM) within the RAG system. The output generated for each document is then evaluated based on the downstream task ground truth labels. In this manner, the downstream performance for each document serves as its relevance label. The approach uses various downstream task metrics to obtain document-level annotations and aggregates them using set-based or ranking metrics. Extensive experiments on a wide range of datasets demonstrate that eRAG achieves a higher correlation with downstream RAG performance compared to baseline methods, with improvements in Kendall's $\tau$ correlation ranging from 0.168 to 0.494. Additionally, eRAG offers significant computational advantages, improving runtime and consuming up to 50 times less GPU memory than end-to-end evaluation.
+
+***
+
+1 INTRODUCTION AND LIMITATIONS OF TRADITIONAL EVALUATION
+
+Retrieval-augmented generation (RAG) has emerged as a prominent approach in natural language processing, combining retrieval and generation models. RAG systems are used for decreasing hallucination, knowledge-grounding, and personalization. Evaluating RAG systems traditionally relies on end-to-end assessment, comparing the generated output with ground truth references.
+
+However, end-to-end evaluation has limitations, particularly for assessing retrieval models in RAG systems:
+* **Lack of Transparency:** It lacks transparency regarding which retrieved document contributed to the generated output, hindering interpretability.
+* **Resource Intensiveness:** It consumes significant time and computational power, especially with large retrieval results and long input sequences.
+* **Complexity with Interleaving:** Ranking systems relying on interleaving necessitate re-computation of the RAG pipeline for slight variations in results.
+* **Lack of Document-Level Feedback:** End-to-end evaluation provides only list-level feedback, whereas optimizing ranking models often requires document-level feedback.
+
+Furthermore, investigations on a diverse set of RAG systems reveal that employing existing human annotations (like KILT provenance labels) for evaluating retrieval models exhibits only a minor correlation with the downstream RAG performance.
+
+2 EVALUATING RETRIEVERS IN RAG
+
+Two predominant methods are generally used for obtaining relevance labels for retrieval evaluation: Human Judgment and Weak Relevance Labels from Ground Truth. Both have limitations: human annotation is costly and relies on preferences, and weak labels are impractical for long-text generation or classification tasks.
+
+**The eRAG Approach**
+The proposed eRAG approach utilizes the LLM in the RAG system itself as the arbiter to generate labels for retrieval evaluation.
+* For a retrieval model $R$ producing a ranked list $R_{k}$, each document $d \in R_{k}$ is fed **individually** to the LLM $M$ along with the query $q$.
+* The generated output $\mathcal{M}(q,\{d\})$ is evaluated against the expected output $y$ using the downstream evaluation function $E_{\mathcal{M}}$ (e.g., Exact Match, Accuracy, F1) to create a relevance label $G_{q}[d]$ for that document.
+* These document-level annotations $G_{q}$ are then aggregated using a set-based or ranking metric (e.g., MAP, MRR, NDCG) to score the retrieval result list.
+
+**Computational Efficiency**
+The runtime cost of a vanilla transformer scales quadratically with input length $O(l \cdot k^2 d^2)$ for end-to-end evaluation with $k$ documents. eRAG is more efficient, with a cost of $O(l \cdot k d^2)$, as each document is fed individually $k$ times.
+
+3 EXPERIMENTAL FINDINGS
+
+The evaluation used datasets from the KILT benchmark—Natural Questions (NQ), TriviaQA, HotpotQA, FEVER, and Wizard of Wikipedia (WoW)—and employed T5-small with Fusion-in-Decoder (FiD) as the LLM. Retrieval was performed using BM25 or Contriever.
+
+* **Correlation with Downstream Performance:** eRAG attained the highest correlation with the downstream performance of the LLM compared to baselines (Containing the Answer, KILT Provenance, and Annotation with LLM). KILT Provenance and Annotation with LLMs had the lowest correlation, confirming the LLM consumer is the best judge.
+* **Impact of Retrieval Results Size:** The eRAG strategy consistently exhibited a higher correlation with the LLM's downstream performance regardless of the quantity of retrieved documents.
+* **Computational Efficiency:** eRAG demonstrated significant computational advantages.
+    * **Inference Time:** On average, eRAG was 2.468 times faster than end-to-end evaluation, with speedups ranging from 1.232 to 3.252 times.
+    * **Memory Consumption:** In a query-level configuration, eRAG exhibited 7 to 15 times greater memory efficiency. This widened to 30 to 48 times more memory efficiency in a document-level configuration.
+
+4 CONCLUSION
+
+eRAG is a novel approach for evaluating retrieval models in RAG pipelines that leverages the LLM's per-document performance on the downstream task to generate relevance labels. The findings confirm that eRAG exhibits significantly higher correlation with the downstream performance of the LLM and demonstrates greater efficiency than end-to-end evaluation in both memory consumption and inference time.

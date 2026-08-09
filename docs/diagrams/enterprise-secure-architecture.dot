@@ -1,0 +1,42 @@
+digraph EnterpriseSecureAgenticAI {
+  rankdir=LR;
+  graph [fontname="Arial", bgcolor="white", pad="0.3", nodesep="0.45", ranksep="0.7"];
+  node [shape=box, style="rounded", fontname="Arial", fontsize=10];
+  edge [fontname="Arial", fontsize=9];
+
+  user [label="User / Service Client"];
+  gateway [label="FastAPI Gateway\nRequest ID + JWT verification"];
+  policy [label="Policy Engine\nTenant + Role + Department\nPurpose + Clearance + Classification"];
+  cache [label="Authorization-aware\nSession + TTL-LRU Cache"];
+  agent [label="Bounded Agent Runtime\nTool budgets + timeout"];
+  broker [label="Secure Context Broker\nRe-authorize + Mask + Minimize"];
+  vector [label="Derived Vector Index\nCourse / Research corpora"];
+  registry [label="Document Registry\nACL + Version + Lifecycle\nJSON or PostgreSQL"];
+  dbtool [label="Typed Operational Tool\nNo arbitrary SQL"];
+  db [label="PostgreSQL Source of Truth\nParameterized query + RLS"];
+  llm [label="NVIDIA Nemotron\nGrounded synthesis only"];
+  citation [label="Citation Validator\n[S...] + [D...]"];
+  dlp [label="Output DLP\nAudit / Redact / Block"];
+  audit [label="Security Audit\nHashes + Decision IDs + Source IDs"];
+
+  user -> gateway;
+  gateway -> policy;
+  policy -> cache [label="allowed"];
+  cache -> agent [label="miss"];
+  agent -> broker [label="document query"];
+  broker -> vector;
+  vector -> registry [style=dashed, label="security metadata"];
+  registry -> broker [style=dashed];
+  agent -> dbtool [label="typed capability"];
+  dbtool -> db;
+  broker -> llm [label="authorized evidence"];
+  dbtool -> llm [label="typed observation"];
+  agent -> llm [style=dashed, label="orchestration"];
+  llm -> citation;
+  citation -> dlp;
+  dlp -> user;
+  policy -> audit [style=dashed];
+  broker -> audit [style=dashed];
+  dbtool -> audit [style=dashed];
+  dlp -> audit [style=dashed];
+}

@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant C as Client
+    participant API as FastAPI
+    participant S as AgentService
+    participant Cache as TTL-LRU Cache
+    participant A as LlamaIndex Agent
+    participant T as Retrieval Tool
+    participant E as NVIDIA Embedding
+    participant L as Nemotron 3 Ultra
+
+    C->>API: POST /v1/chat
+    API->>S: query + user/session scope
+    S->>Cache: lookup(versioned key)
+    alt cache hit
+        Cache-->>S: answer + sources + citation audit
+        S-->>API: cached response
+    else cache miss
+        S->>A: run with bounded workflow
+        A->>L: plan / native tool call
+        A->>T: corpus-specific retrieval
+        T->>E: query embedding
+        E-->>T: vector
+        T-->>A: evidence JSON + stable citation IDs
+        A->>L: grounded synthesis with citations
+        L-->>A: final answer
+        A-->>S: answer + tool events
+        S->>S: validate citation IDs and coverage
+        S->>Cache: store only valid grounded response
+        S-->>API: typed response + provenance
+    end
+    API-->>C: JSON + X-Request-ID

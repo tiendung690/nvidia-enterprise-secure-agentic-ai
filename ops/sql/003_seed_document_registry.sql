@@ -1,0 +1,35 @@
+INSERT INTO document_registry (
+    corpus, relative_path, document_id, tenant_id, classification, is_public,
+    allowed_roles, allowed_departments, allowed_purposes, shared_with_tenants,
+    source_version, policy_version, active
+) VALUES
+    ('agentic-rag-course', '00.pdf', 'course-agentic-rag-00', 'public', 'public', true,
+     '{}', '{}', ARRAY['learning','research','architecture-review','security-audit'], '{}',
+     1, 'enterprise-policy-v1', true),
+    ('agentic-rag-course', '01.pdf', 'course-agentic-rag-01', 'public', 'public', true,
+     '{}', '{}', ARRAY['learning','research','architecture-review','security-audit'], '{}',
+     1, 'enterprise-policy-v1', true),
+    ('agentic-rag-course', '02.pdf', 'course-agentic-rag-02', 'public', 'public', true,
+     '{}', '{}', ARRAY['learning','research','architecture-review','security-audit'], '{}',
+     1, 'enterprise-policy-v1', true),
+    ('agentic-rag-course', '04.pdf', 'course-agentic-rag-04', 'public', 'public', true,
+     '{}', '{}', ARRAY['learning','research','architecture-review','security-audit'], '{}',
+     1, 'enterprise-policy-v1', true),
+    ('research-papers', 'paper1.txt', 'research-paper-1', 'public', 'public', true,
+     '{}', '{}', ARRAY['learning','research','architecture-review'], '{}',
+     1, 'enterprise-policy-v1', true),
+    ('research-papers', 'paper2.txt', 'research-paper-erag', 'public', 'public', true,
+     '{}', '{}', ARRAY['learning','research','architecture-review'], '{}',
+     1, 'enterprise-policy-v1', true)
+ON CONFLICT (document_id) DO UPDATE SET
+    tenant_id = excluded.tenant_id,
+    classification = excluded.classification,
+    is_public = excluded.is_public,
+    allowed_roles = excluded.allowed_roles,
+    allowed_departments = excluded.allowed_departments,
+    allowed_purposes = excluded.allowed_purposes,
+    shared_with_tenants = excluded.shared_with_tenants,
+    source_version = excluded.source_version,
+    policy_version = excluded.policy_version,
+    active = excluded.active,
+    updated_at = now();

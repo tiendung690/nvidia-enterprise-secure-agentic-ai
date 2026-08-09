@@ -1,0 +1,25 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    commands:
+      - set -euo pipefail
+      - curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v1.36.2/bin/linux/amd64/kubectl"
+      - chmod +x /usr/local/bin/kubectl
+  pre_build:
+    commands:
+      - set -euo pipefail
+      - source release.env
+      - aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+  build:
+    commands:
+      - set -euo pipefail
+      - source release.env
+      - JOB="agentic-eval-${CODEBUILD_BUILD_NUMBER}"
+      - kubectl -n agentic-staging delete job "$JOB" --ignore-not-found=true
+      - kubectl -n agentic-staging create job "$JOB" --image="$IMAGE_REF" -- python scripts/evaluate_api.py --base-url http://agentic-ai:8000
+      - kubectl -n agentic-staging wait --for=condition=complete "job/$JOB" --timeout=1800s || { kubectl -n agentic-staging logs "job/$JOB" --all-containers=true; exit 1; }
+      - kubectl -n agentic-staging logs "job/$JOB" --all-containers=true

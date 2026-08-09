@@ -1,0 +1,43 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD}
+
+  app:
+    environment:
+      ENVIRONMENT: production
+      AUTH_MODE: jwt
+      ALLOW_DEV_IDENTITY_HEADERS: "false"
+      JWT_ALGORITHMS: '["RS256"]'
+      DOCUMENT_REGISTRY_BACKEND: postgres
+      OPERATIONAL_DATA_BACKEND: postgres
+      MEMORY_BACKEND: postgres
+      MEMORY_AUTO_CAPTURE_PREFERENCES: "true"
+      TRACE_BACKEND: postgres
+      AUDIT_BACKEND: postgres
+      CONVERSATION_CONTEXT_MODE: bounded
+      REQUIRE_DOCUMENT_SECURITY_METADATA: "true"
+      PROMPT_GUARD_MODE: block
+      CITATION_VALIDATION_MODE: strict
+      OUTPUT_DLP_MODE: redact
+      AUTO_INGEST: "false"
+    restart: unless-stopped
+
+  ingest:
+    environment:
+      ENVIRONMENT: production
+      AUTH_MODE: jwt
+      ALLOW_DEV_IDENTITY_HEADERS: "false"
+      JWT_ALGORITHMS: '["RS256"]'
+      DOCUMENT_REGISTRY_BACKEND: postgres
+      OPERATIONAL_DATA_BACKEND: postgres
+      MEMORY_BACKEND: postgres
+      MEMORY_AUTO_CAPTURE_PREFERENCES: "true"
+      TRACE_BACKEND: postgres
+      AUDIT_BACKEND: postgres
+      CONVERSATION_CONTEXT_MODE: bounded
+      REQUIRE_DOCUMENT_SECURITY_METADATA: "true"
+      PROMPT_GUARD_MODE: block
+      CITATION_VALIDATION_MODE: strict
+      OUTPUT_DLP_MODE: redact
+      AUTO_INGEST: "false"

@@ -1,0 +1,51 @@
+version: 0.2
+
+env:
+  shell: bash
+  exported-variables:
+    - IMAGE_TAG
+    - IMAGE_DIGEST
+    - IMAGE_REPOSITORY
+    - IMAGE_REF
+
+phases:
+  pre_build:
+    commands:
+      - set -euo pipefail
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+      - IMAGE_TAG="${CODEBUILD_RESOLVED_SOURCE_VERSION:0:12}"
+      - IMAGE_REPOSITORY="$ECR_REPOSITORY_URI"
+  build:
+    commands:
+      - |
+        EXISTING_DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY_NAME" --image-ids imageTag="$IMAGE_TAG" --query 'imageDetails[0].imageDigest' --output text 2>/dev/null || true)
+        if [ -n "$EXISTING_DIGEST" ] && [ "$EXISTING_DIGEST" != "None" ]; then
+          echo "Immutable image already exists for commit $IMAGE_TAG; reusing $EXISTING_DIGEST"
+        else
+          docker build --pull -f Dockerfile.aws -t "$IMAGE_REPOSITORY:$IMAGE_TAG" .
+          docker push "$IMAGE_REPOSITORY:$IMAGE_TAG"
+        fi
+      - IMAGE_DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY_NAME" --image-ids imageTag="$IMAGE_TAG" --query 'imageDetails[0].imageDigest' --output text)
+      - test -n "$IMAGE_DIGEST" && test "$IMAGE_DIGEST" != "None"
+      - aws ecr wait image-scan-complete --repository-name "$ECR_REPOSITORY_NAME" --image-id imageTag="$IMAGE_TAG"
+      - CRITICAL_COUNT=$(aws ecr describe-image-scan-findings --repository-name "$ECR_REPOSITORY_NAME" --image-id imageTag="$IMAGE_TAG" --query 'imageScanFindings.findingSeverityCounts.CRITICAL' --output text)
+      - CRITICAL_COUNT=${CRITICAL_COUNT:-0}
+      - CRITICAL_COUNT=$([ "$CRITICAL_COUNT" = "None" ] && echo 0 || echo "$CRITICAL_COUNT")
+      - test "$CRITICAL_COUNT" -eq 0 || { echo "Blocking release: $CRITICAL_COUNT CRITICAL image vulnerabilities"; exit 1; }
+      - IMAGE_REF="${IMAGE_REPOSITORY}@${IMAGE_DIGEST}"
+      - printf 'IMAGE_REPOSITORY=%s\nIMAGE_TAG=%s\nIMAGE_DIGEST=%s\nIMAGE_REF=%s\n' "$IMAGE_REPOSITORY" "$IMAGE_TAG" "$IMAGE_DIGEST" "$IMAGE_REF" > release.env
+  post_build:
+    commands:
+      - echo "Built immutable image $IMAGE_REF"
+
+artifacts:
+  files:
+    - release.env
+    - deploy/helm/**/*
+    - deploy/k8s/**/*
+    - scripts/aws/**/*
+    - cicd/buildspec-deploy.yml
+    - cicd/buildspec-evaluate.yml
+  discard-paths: no

@@ -1,0 +1,32 @@
+digraph G {
+  rankdir=TB;
+  graph [fontname="Arial", bgcolor="white", pad="0.25", nodesep="0.4", ranksep="0.45"];
+  node [shape=box, style="rounded,filled", fillcolor="#F7F9FC", color="#425466", fontname="Arial"];
+  edge [color="#596780", fontname="Arial"];
+
+  Start [label="POST /v1/chat"];
+  Scope [label="Resolve user/session + request ID"];
+  Guard [label="Direct prompt guard"];
+  Key [label="Build cache key:\ntenant + session + query + index + model + prompt"];
+  Hit [shape=diamond, label="Cache hit?"];
+  Cached [label="Return cached answer + sources\n7-20 ms typical local overhead"];
+  Budget [label="Acquire queue slot + session lock"];
+  Plan [label="Nemotron plans / selects tool"];
+  Retrieve [label="Retrieval-only tool\nfilter score + indirect-injection audit"];
+  Evidence [label="Return evidence JSON + stable citations + sources"];
+  Synthesis [label="Nemotron grounded synthesis\nclaim-level citation IDs"];
+  Validate [shape=diamond, label="Citation audit valid?"];
+  NoCache [label="Return with citation errors\n(strict mode rejects)"];
+  Store [label="Cache answer + sources + citation audit"];
+  Response [label="Typed ChatResponse + metrics"];
+
+  Start -> Scope -> Guard -> Key -> Hit;
+  Hit -> Cached [label="yes"];
+  Hit -> Budget [label="no"];
+  Budget -> Plan -> Retrieve -> Evidence -> Synthesis -> Validate;
+  Validate -> Store [label="yes"];
+  Validate -> NoCache [label="no"];
+  Store -> Response;
+  NoCache -> Response;
+  Cached -> Response;
+}

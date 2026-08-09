@@ -1,0 +1,30 @@
+aws_region   = "ap-southeast-1"
+project_name = "agentic-ai"
+environment  = "prod"
+
+github_owner            = "YOUR_GITHUB_ORG"
+agentic_repo_name       = "nvidia-enterprise-secure-agentic-ai"
+agentic_branch          = "main"
+dcea_repo_name          = "dcea_demo"
+dcea_branch             = "main"
+codestar_connection_arn = "arn:aws:codeconnections:ap-southeast-1:123456789012:connection/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+az_count           = 3
+nat_gateway_mode   = "per_az"
+rds_multi_az       = true
+rds_instance_class = "db.t4g.medium"
+rds_deletion_protection = true
+rds_skip_final_snapshot = false
+
+node_instance_types = ["m7i.large"]
+node_min_size       = 3
+node_desired_size   = 3
+node_max_size       = 8
+
+cluster_endpoint_public_access  = true
+cluster_endpoint_private_access = true
+cluster_public_access_cidrs      = ["YOUR_OFFICE_OR_VPN_IP/32"]
+
+enable_agentic_pipeline      = true
+enable_dcea_pipeline         = true
+enable_staging_ai_evaluation = true

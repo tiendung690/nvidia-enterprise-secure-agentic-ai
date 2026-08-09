@@ -1,0 +1,15 @@
+replicaCount: 2
+environment: production
+auth:
+  mode: jwt
+  allowDevIdentityHeaders: false
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

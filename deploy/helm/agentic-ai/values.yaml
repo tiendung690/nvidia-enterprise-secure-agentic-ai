@@ -1,0 +1,51 @@
+replicaCount: 2
+
+image:
+  repository: ""
+  digest: ""
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+environment: staging
+
+auth:
+  mode: dev
+  allowDevIdentityHeaders: true
+  jwtIssuer: ""
+  jwtAudience: ""
+  jwtJwksUrl: ""
+
+analytics:
+  enabled: true
+  tenantId: tenant-a
+  maxRows: 10
+  snapshotTtlSeconds: 60
+
+persistence:
+  ragClaim: agentic-rag-storage
+  lakehouseClaim: agentic-lakehouse
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

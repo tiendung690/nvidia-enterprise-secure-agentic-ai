@@ -1,0 +1,42 @@
+services:
+  provider-capture:
+    build:
+      context: .
+    entrypoint: ["python", "/app/scripts/provider_capture.py"]
+    environment:
+      CAPTURE_PATH: /capture/events.jsonl
+      CAPTURE_PORT: "18081"
+    volumes:
+      - ./artifacts/provider-capture:/capture
+    ports:
+      - "18081:18081"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18081/health', timeout=3)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  app:
+    environment:
+      NVIDIA_BASE_URL: http://provider-capture:18081/v1
+      NVIDIA_API_KEY: synthetic-capture-key-not-a-secret
+    volumes:
+      - ./artifacts/provider-capture:/capture:ro
+    depends_on:
+      provider-capture:
+        condition: service_healthy
+
+  ingest:
+    environment:
+      NVIDIA_BASE_URL: http://provider-capture:18081/v1
+      NVIDIA_API_KEY: synthetic-capture-key-not-a-secret
+    depends_on:
+      provider-capture:
+        condition: service_healthy

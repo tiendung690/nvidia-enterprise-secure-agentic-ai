@@ -1,0 +1,27 @@
+flowchart LR
+  U[End User / API Client] --> ID[JWT Identity + Purpose]
+  ID --> QP[Query Policy + Prompt Guard]
+  QP --> MR[Known-Scope Memory Read\nPolicy + Preference]
+  QP --> QT[Guarded Multi-Query]
+  QT --> VS[Vector Retrieval]
+  QT --> LS[BM25 / Lexical Retrieval]
+  VS --> RRF[Reciprocal Rank Fusion]
+  LS --> RRF
+  RRF --> RR[Deterministic Reranker]
+  RR --> CQ[Corrective Quality Gate + Fallback]
+  CQ --> SCB[Secure Context Broker\nAuthorization before LLM exposure]
+  MR --> PA[Bounded Prompt Assembly]
+  SCB --> PA
+  CS[Bounded Recent Conversation] --> PA
+  PA --> AG[Bounded Agent Runtime]
+  AG --> NV[NVIDIA Model Gateway\nRetry + Circuit Breaker]
+  AG --> TOOLS[Typed Read-Only Tools]
+  NV --> DLP[Output DLP + Citation Postcondition]
+  TOOLS --> DLP
+  DLP --> RESP[Typed End-User Response]
+  RESP --> TR[Append-Only Run Trace]
+  RESP --> PG[Explicit Memory Promotion API]
+  PG --> GATE[Promotion Gate\nScope + Provenance + Confidence]
+  GATE --> MEM[(Typed Durable Memory\nPolicy / Preference / Fact / Episode)]
+  GATE --> OUT[(Transactional Outbox)]
+  MEM --> MR

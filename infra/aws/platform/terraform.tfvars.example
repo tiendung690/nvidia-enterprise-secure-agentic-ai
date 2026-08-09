@@ -1,0 +1,30 @@
+aws_region   = "ap-southeast-1"
+project_name = "agentic-ai"
+environment  = "prod"
+
+# Replace with your GitHub account/org and the authorized AWS CodeConnections ARN.
+github_owner             = "YOUR_GITHUB_USER"
+agentic_repo_name        = "nvidia-enterprise-secure-agentic-ai"
+agentic_branch           = "main"
+dcea_repo_name           = "dcea_demo"
+dcea_branch              = "main"
+codestar_connection_arn  = "arn:aws:codeconnections:ap-southeast-1:123456789012:connection/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Cost-aware hands-on lab. For stronger production HA use per_az + Multi-AZ RDS + 3 AZs.
+az_count             = 2
+nat_gateway_mode      = "single"
+rds_multi_az          = false
+node_instance_types   = ["m7i.large"]
+node_min_size         = 2
+node_desired_size     = 2
+node_max_size         = 4
+rds_instance_class    = "db.t4g.micro"
+
+# REPLACE with your current public IPv4/32 before terraform apply.
+cluster_endpoint_public_access = true
+cluster_endpoint_private_access = true
+cluster_public_access_cidrs = ["203.0.113.10/32"]
+
+enable_agentic_pipeline       = true
+enable_dcea_pipeline          = true
+enable_staging_ai_evaluation  = true

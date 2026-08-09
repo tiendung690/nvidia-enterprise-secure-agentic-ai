@@ -1,0 +1,25 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - python --version
+      - pip install --upgrade pip
+      - pip install -e '.[dev]'
+  pre_build:
+    commands:
+      - python scripts/validate_repo.py
+      - python scripts/static_quality.py
+  build:
+    commands:
+      - ruff check src tests scripts
+      - pytest
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'

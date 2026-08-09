@@ -1,0 +1,4 @@
+{"id":"course-basic-agentic","query":"According to the indexed course documents, compare Basic RAG and Agentic RAG, including workflow, components, reasoning, tool use, strengths, and limitations.","expected_tool":"agentic_rag_course_tool","required_terms":["Basic RAG","Agentic RAG","planner","tool","memory"]}
+{"id":"paper-erag","query":"According to the indexed research papers, what is eRAG and what computational benefit does it provide?","expected_tool":"research_paper_rag_tool","required_terms":["eRAG","memory","faster","document"]}
+{"id":"calculator","query":"Calculate (125 * 5) + 25.","expected_tool":"safe_calculator_tool","required_terms":["650"]}
+{"id":"definition","query":"Define retrieval-augmented generation in two sentences.","expected_tool":"definition_tool","required_terms":["retrieval","generation"]}

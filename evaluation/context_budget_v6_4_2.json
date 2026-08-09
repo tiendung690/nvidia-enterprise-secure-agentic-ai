@@ -1,0 +1,30 @@
+[
+  {
+    "id": "C01",
+    "query": "Summarize our strategy for GPU-accelerated training and related bottlenecks.",
+    "expected_route": "direct_rag",
+    "expected_complex_agent_planning": false,
+    "expected_context_overflow": false,
+    "notes": "Implicit company-specific knowledge should retrieve bounded evidence before synthesis."
+  },
+  {
+    "id": "C02",
+    "scenario": "stale_env_context_window",
+    "configured_context_window": 1000000,
+    "model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "expected_provider_limit": 258048,
+    "expected_effective_llm_context_window": 249856
+  },
+  {
+    "id": "C03",
+    "scenario": "legacy_session_context",
+    "conversation_context_mode": "legacy",
+    "expected_startup_rejected": true
+  },
+  {
+    "id": "C04",
+    "scenario": "provider_context_length_error",
+    "expected_error_code": "NVIDIA_CONTEXT_LENGTH_EXCEEDED",
+    "expected_retryable": false
+  }
+]

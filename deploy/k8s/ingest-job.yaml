@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agentic-ingest-${JOB_SUFFIX}
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: ingest
+          image: ${IMAGE_REF}
+          command: ["agentic-rag", "ingest", "--recreate"]
+          env:
+            - name: ENVIRONMENT
+              value: "${TARGET_ENV}"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: NVIDIA_BASE_URL
+              value: "https://integrate.api.nvidia.com/v1"
+            - name: NVIDIA_LLM_MODEL
+              value: "nvidia/nemotron-3-ultra-550b-a55b"
+            - name: NVIDIA_EMBEDDING_MODEL
+              value: "nvidia/nv-embedqa-e5-v5"
+            - name: AUTH_MODE
+              value: "${AUTH_MODE}"
+            - name: ALLOW_DEV_IDENTITY_HEADERS
+              value: "${ALLOW_DEV_IDENTITY_HEADERS}"
+            - name: JWT_ISSUER
+              value: "${JWT_ISSUER}"
+            - name: JWT_AUDIENCE
+              value: "${JWT_AUDIENCE}"
+            - name: JWT_JWKS_URL
+              value: "${JWT_JWKS_URL}"
+            - name: JWT_ALGORITHMS
+              value: '["RS256"]'
+            - name: DOCUMENT_REGISTRY_BACKEND
+              value: "postgres"
+            - name: OPERATIONAL_DATA_BACKEND
+              value: "postgres"
+            - name: MEMORY_BACKEND
+              value: "postgres"
+            - name: TRACE_BACKEND
+              value: "postgres"
+            - name: AUDIT_BACKEND
+              value: "postgres"
+            - name: AUTO_INGEST
+              value: "false"
+            - name: STORAGE_DIR
+              value: "/app/storage"
+            - name: COURSE_DATA_DIR
+              value: "/app/data/course"
+            - name: PAPERS_DATA_DIR
+              value: "/app/data/papers"
+            - name: CONVERSATION_CONTEXT_MODE
+              value: "bounded"
+          envFrom:
+            - secretRef:
+                name: agentic-runtime
+          volumeMounts:
+            - name: rag-storage
+              mountPath: /app/storage
+      volumes:
+        - name: rag-storage
+          persistentVolumeClaim:
+            claimName: agentic-rag-storage

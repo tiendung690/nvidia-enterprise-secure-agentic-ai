@@ -1,0 +1,14 @@
+digraph G {
+  rankdir=LR;
+  node [shape=box, style="rounded"];
+  User -> API -> Identity -> Policy -> Guard -> Cache -> Admission -> SessionRuntime -> Agent;
+  Agent -> ToolGateway -> SecureContextBroker;
+  SecureContextBroker -> VectorIndex;
+  SecureContextBroker -> DocumentRegistry;
+  ToolGateway -> OperationalDB;
+  Agent -> ModelGateway -> CircuitBreaker -> NVIDIA;
+  Agent -> OutputDLP -> CitationGate -> Response -> User;
+  Policy -> Audit;
+  ToolGateway -> Audit;
+  CitationGate -> Audit;
+}

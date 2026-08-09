@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nvidia-agentic-rag-llamaindex"
+version = "6.4.4"
+description = "Governed Enterprise Agentic AI with hybrid RAG, typed memory, replayable traces, and NVIDIA APIs"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "Reference Architecture" }]
+dependencies = [
+  "fastapi>=0.115,<1.0",
+  "uvicorn[standard]>=0.32,<1.0",
+  "pydantic>=2.10,<3.0",
+  "pydantic-settings>=2.7,<3.0",
+  "python-dotenv>=1.0,<2.0",
+  "openai>=1.58,<3.0",
+  "httpx>=0.27,<1.0",
+  "llama-index-core>=0.12,<1.0",
+  "llama-index-llms-openai-like>=0.3,<1.0",
+  "llama-index-readers-file>=0.4,<1.0",
+  "pypdf>=5.1,<7.0",
+  "arxiv>=2.1,<3.0",
+  "wikipedia>=1.4,<2.0",
+  "prometheus-client>=0.21,<1.0",
+  "python-json-logger>=3.2,<5.0",
+  "PyJWT[crypto]>=2.10,<3.0",
+  "psycopg[binary]>=3.2,<4.0",
+  "deltalake>=1.0,<2.0",
+  "pika>=1.3,<2.0",
+  "pyarrow>=16,<23",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<10.0",
+  "pytest-asyncio>=0.25,<2.0",
+  "pytest-cov>=6.0,<8.0",
+  "ruff>=0.9,<1.0",
+  "mypy>=1.14,<2.0",
+]
+
+[project.scripts]
+agentic-rag = "nvidia_agentic_rag.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nvidia_agentic_rag"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers --cov=nvidia_agentic_rag.agents.cache --cov=nvidia_agentic_rag.agents.service --cov=nvidia_agentic_rag.config --cov=nvidia_agentic_rag.grounding.citations --cov=nvidia_agentic_rag.rag.provenance --cov=nvidia_agentic_rag.safety.guards --cov=nvidia_agentic_rag.schemas --cov=nvidia_agentic_rag.tools.calculator --cov=nvidia_agentic_rag.nvidia.errors --cov=nvidia_agentic_rag.identity.models --cov=nvidia_agentic_rag.identity.context --cov=nvidia_agentic_rag.identity.jwt --cov=nvidia_agentic_rag.policy.models --cov=nvidia_agentic_rag.policy.engine --cov=nvidia_agentic_rag.context.models --cov=nvidia_agentic_rag.context.broker --cov=nvidia_agentic_rag.security.classification --cov=nvidia_agentic_rag.security.masking --cov=nvidia_agentic_rag.security.output_policy --cov=nvidia_agentic_rag.data.document_registry --cov=nvidia_agentic_rag.data.operational --cov=nvidia_agentic_rag.data.analytics --cov=nvidia_agentic_rag.tools.secure_analytics --cov=nvidia_agentic_rag.audit.models --cov=nvidia_agentic_rag.audit.service --cov=nvidia_agentic_rag.tools.secure_operational --cov=nvidia_agentic_rag.runtime.budgeting --cov=nvidia_agentic_rag.runtime.circuit_breaker --cov=nvidia_agentic_rag.runtime.errors --cov=nvidia_agentic_rag.query.transformation --cov=nvidia_agentic_rag.retrieval.hybrid --cov=nvidia_agentic_rag.memory.models --cov=nvidia_agentic_rag.memory.promotion --cov=nvidia_agentic_rag.memory.service --cov=nvidia_agentic_rag.conversation.bounded --cov=nvidia_agentic_rag.tracing.models --cov=nvidia_agentic_rag.tracing.service --cov-report=term-missing --cov-fail-under=90"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+  "live: invokes NVIDIA hosted APIs and requires NVIDIA_API_KEY",
+  "integration: requires an external PostgreSQL or service dependency",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["B008"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+

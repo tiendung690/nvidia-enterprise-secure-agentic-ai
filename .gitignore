@@ -1,0 +1,61 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+storage/*
+!storage/.gitkeep
+data/lakehouse/
+
+# Never commit runtime secrets/backups. Keep only the documented template.
+.env*
+!.env.example
+
+# AWS / Terraform generated files
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
+**/backend.hcl
+.terraform.lock.hcl
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Local artifacts
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+artifacts/
+
+# IDE
+.idea/
+
+# Local/runtime logs
+app_last_30m.txt
+docker_app_logs.txt
+
+# Terraform local/runtime
+**/terraform.tfvars
+**/terraform.tfvars.bak
+**/*.tfplan
+**/backend.hcl
+infra/aws/bootstrap/new-plan
+infra/aws/bootstrap/--bucket
+
+# Temporary AWS lab migration files
+infra/aws/platform/full-production-backup/
+infra/aws/platform/*.disabled
+infra/aws/bootstrap/*.bak
+infra/aws/bootstrap/*.before-no-tag
+
+# Accidental shell-output files
+infra/aws/platform/iam\ get-user-policy\ \\
+infra/aws/platform/iam\ list-user-policies\ \\

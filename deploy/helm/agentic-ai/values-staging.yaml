@@ -1,0 +1,14 @@
+replicaCount: 1
+environment: staging
+auth:
+  mode: dev
+  allowDevIdentityHeaders: true
+resources:
+  requests:
+    cpu: 250m
+    memory: 768Mi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+podDisruptionBudget:
+  enabled: false

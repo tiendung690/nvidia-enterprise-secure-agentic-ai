@@ -1,0 +1,5 @@
+apiVersion: v2
+name: agentic-ai
+version: 0.1.0
+appVersion: "6.4.4"
+description: Enterprise Secure Agentic AI deployment for AWS EKS

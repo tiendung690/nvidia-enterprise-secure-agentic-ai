@@ -1,0 +1,64 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    commands:
+      - set -euo pipefail
+      - curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v1.36.2/bin/linux/amd64/kubectl"
+      - chmod +x /usr/local/bin/kubectl
+      - HELM_VERSION=v3.21.1
+      - curl -fsSLo /tmp/helm.tgz "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+      - tar -xzf /tmp/helm.tgz -C /tmp && install -m 0755 /tmp/linux-amd64/helm /usr/local/bin/helm
+  pre_build:
+    commands:
+      - set -euo pipefail
+      - set -a; source release.env; set +a
+      - aws eks update-kubeconfig --name "$EKS_CLUSTER_NAME" --region "$AWS_REGION"
+      - kubectl get namespace "$K8S_NAMESPACE"
+      - RUNTIME_JSON=$(aws secretsmanager get-secret-value --secret-id "$RUNTIME_SECRET_ARN" --query SecretString --output text)
+      - MASTER_JSON=$(aws secretsmanager get-secret-value --secret-id "$RDS_MASTER_SECRET_ARN" --query SecretString --output text)
+      - export NVIDIA_API_KEY=$(printf '%s' "$RUNTIME_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["NVIDIA_API_KEY"])')
+      - export ADMIN_TOKEN=$(printf '%s' "$RUNTIME_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["ADMIN_TOKEN"])')
+      - export MASKING_SALT=$(printf '%s' "$RUNTIME_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["MASKING_SALT"])')
+      - export DB_APP_PASSWORD=$(printf '%s' "$RUNTIME_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["DB_APP_PASSWORD"])')
+      - export DB_REGISTRY_PASSWORD=$(printf '%s' "$RUNTIME_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["DB_REGISTRY_PASSWORD"])')
+      - export RDS_MASTER_USERNAME=$(printf '%s' "$MASTER_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["username"])')
+      - export RDS_MASTER_PASSWORD=$(printf '%s' "$MASTER_JSON" | python -c 'import json,sys; print(json.load(sys.stdin)["password"])')
+      - export DB_APP_PASSWORD_URL=$(printf '%s' "$DB_APP_PASSWORD" | python -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=""))')
+      - export DB_REGISTRY_PASSWORD_URL=$(printf '%s' "$DB_REGISTRY_PASSWORD" | python -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=""))')
+      - export RDS_MASTER_PASSWORD_URL=$(printf '%s' "$RDS_MASTER_PASSWORD" | python -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=""))')
+      - export DATABASE_URL="postgresql://agentic_app:${DB_APP_PASSWORD_URL}@${RDS_ENDPOINT}:5432/${RDS_DATABASE}?sslmode=require"
+      - export DOCUMENT_REGISTRY_DATABASE_URL="postgresql://agentic_registry:${DB_REGISTRY_PASSWORD_URL}@${RDS_ENDPOINT}:5432/${RDS_DATABASE}?sslmode=require"
+      - export MIGRATION_DATABASE_URL="postgresql://${RDS_MASTER_USERNAME}:${RDS_MASTER_PASSWORD_URL}@${RDS_ENDPOINT}:5432/${RDS_DATABASE}?sslmode=require"
+      - kubectl -n "$K8S_NAMESPACE" create secret generic agentic-runtime --dry-run=client -o yaml --from-literal=NVIDIA_API_KEY="$NVIDIA_API_KEY" --from-literal=ADMIN_TOKEN="$ADMIN_TOKEN" --from-literal=MASKING_SALT="$MASKING_SALT" --from-literal=DATABASE_URL="$DATABASE_URL" --from-literal=MEMORY_DATABASE_URL="$DATABASE_URL" --from-literal=DOCUMENT_REGISTRY_DATABASE_URL="$DOCUMENT_REGISTRY_DATABASE_URL" | kubectl apply -f -
+      - kubectl -n "$K8S_NAMESPACE" create secret generic agentic-migration --dry-run=client -o yaml --from-literal=MIGRATION_DATABASE_URL="$MIGRATION_DATABASE_URL" --from-literal=DB_APP_PASSWORD="$DB_APP_PASSWORD" --from-literal=DB_REGISTRY_PASSWORD="$DB_REGISTRY_PASSWORD" | kubectl apply -f -
+  build:
+    commands:
+      - set -euo pipefail
+      - set -a; source release.env; set +a
+      - export JOB_SUFFIX=$(date +%s)
+      - export AUTH_MODE=$([ "$TARGET_ENV" = "production" ] && echo jwt || echo dev)
+      - export ALLOW_DEV_IDENTITY_HEADERS=$([ "$TARGET_ENV" = "production" ] && echo false || echo true)
+      - envsubst < deploy/k8s/db-migrate-job.yaml | kubectl -n "$K8S_NAMESPACE" apply -f -
+      - kubectl -n "$K8S_NAMESPACE" wait --for=condition=complete "job/agentic-db-migrate-${JOB_SUFFIX}" --timeout=300s || { kubectl -n "$K8S_NAMESPACE" logs "job/agentic-db-migrate-${JOB_SUFFIX}" --all-containers=true; exit 1; }
+      - kubectl -n "$K8S_NAMESPACE" logs "job/agentic-db-migrate-${JOB_SUFFIX}" --all-containers=true
+      - |
+        if [ "$TARGET_ENV" = "staging" ]; then
+          envsubst < deploy/k8s/ingest-job.yaml | kubectl -n "$K8S_NAMESPACE" apply -f -
+          kubectl -n "$K8S_NAMESPACE" wait --for=condition=complete "job/agentic-ingest-${JOB_SUFFIX}" --timeout=1800s || { kubectl -n "$K8S_NAMESPACE" logs "job/agentic-ingest-${JOB_SUFFIX}" --all-containers=true; exit 1; }
+        else
+          envsubst < deploy/k8s/promote-index-job.yaml | kubectl -n "$K8S_NAMESPACE" apply -f -
+          kubectl -n "$K8S_NAMESPACE" wait --for=condition=complete "job/agentic-index-promote-${JOB_SUFFIX}" --timeout=600s || { kubectl -n "$K8S_NAMESPACE" logs "job/agentic-index-promote-${JOB_SUFFIX}" --all-containers=true; exit 1; }
+        fi
+      - VALUES_FILE="deploy/helm/agentic-ai/values-${TARGET_ENV}.yaml"
+      - helm upgrade --install agentic-ai deploy/helm/agentic-ai --namespace "$K8S_NAMESPACE" --values "$VALUES_FILE" --set-string image.repository="$IMAGE_REPOSITORY" --set-string image.digest="$IMAGE_DIGEST" --set-string auth.jwtIssuer="$JWT_ISSUER" --set-string auth.jwtAudience="$JWT_AUDIENCE" --set-string auth.jwtJwksUrl="$JWT_JWKS_URL" --atomic --timeout 10m
+      - kubectl -n "$K8S_NAMESPACE" rollout status deployment/agentic-ai --timeout=600s
+      - SMOKE_NAME="agentic-smoke-${JOB_SUFFIX}"
+      - kubectl -n "$K8S_NAMESPACE" run "$SMOKE_NAME" --image=curlimages/curl:8.15.0 --restart=Never --command -- sh -c 'curl -fsS --retry 10 --retry-delay 3 http://agentic-ai:8000/health/live && echo && curl -fsS --retry 10 --retry-delay 3 http://agentic-ai:8000/health/ready'
+      - kubectl -n "$K8S_NAMESPACE" wait --for=condition=Ready "pod/${SMOKE_NAME}" --timeout=120s || true
+      - kubectl -n "$K8S_NAMESPACE" wait --for=jsonpath='{.status.phase}'=Succeeded "pod/${SMOKE_NAME}" --timeout=300s || { kubectl -n "$K8S_NAMESPACE" logs "$SMOKE_NAME"; exit 1; }
+      - kubectl -n "$K8S_NAMESPACE" logs "$SMOKE_NAME"
+      - kubectl -n "$K8S_NAMESPACE" delete pod "$SMOKE_NAME" --ignore-not-found=true

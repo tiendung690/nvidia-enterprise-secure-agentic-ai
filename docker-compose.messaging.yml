@@ -1,0 +1,117 @@
+services:
+  postgres:
+    networks: [enterprise_lab]
+
+  app:
+    networks: [enterprise_lab]
+    volumes:
+      - rag_storage:/app/storage
+      - ./data:/app/data:ro
+      - ../dcea_demo/warehouse/dcea_medallion.db:/app/data/lakehouse/dcea_medallion.db:ro
+    environment:
+      ANALYTICS_BACKEND: delta
+      DELTA_WAREHOUSE_ROOT: /app/data/lakehouse/dcea_medallion.db
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    environment:
+      RABBITMQ_DEFAULT_USER: lab
+      RABBITMQ_DEFAULT_PASS: labpass
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [enterprise_lab]
+    security_opt:
+      - no-new-privileges:true
+
+  memory-event-consumer:
+    build:
+      context: .
+    environment:
+      RABBITMQ_URL: amqp://lab:labpass@rabbitmq:5672/%2F
+      CONSUMER_DATABASE_URL: postgresql://agentic_admin:agentic_admin@postgres:5432/agentic_ai
+      MEMORY_EVENT_QUEUE: agent.memory.events
+      MEMORY_EVENT_BINDING: memory.#
+      MEMORY_PREFETCH: "10"
+      MQ_MAX_RETRIES: "3"
+      MQ_RETRY_DELAY_MS: "5000"
+    command: ["python", "scripts/memory_event_consumer.py"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    networks: [enterprise_lab]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+
+  lakehouse-event-consumer:
+    build:
+      context: .
+    environment:
+      RABBITMQ_URL: amqp://lab:labpass@rabbitmq:5672/%2F
+      CONSUMER_DATABASE_URL: postgresql://agentic_admin:agentic_admin@postgres:5432/agentic_ai
+    command:
+      [
+        "python",
+        "scripts/memory_event_consumer.py",
+        "--queue",
+        "agent.lakehouse.events",
+        "--binding",
+        "lakehouse.gold.#",
+        "--consumer-name",
+        "lakehouse-refresh-consumer"
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    networks: [enterprise_lab]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+
+  outbox-dispatcher:
+    build:
+      context: .
+    environment:
+      MAINTENANCE_DATABASE_URL: postgresql://agentic_admin:agentic_admin@postgres:5432/agentic_ai
+      OUTBOX_SINK: rabbitmq
+      RABBITMQ_URL: amqp://lab:labpass@rabbitmq:5672/%2F
+    command:
+      [
+        "python",
+        "scripts/outbox_dispatcher.py",
+        "--sink",
+        "rabbitmq",
+        "--poll-seconds",
+        "2"
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      memory-event-consumer:
+        condition: service_started
+    restart: unless-stopped
+    init: true
+    networks: [enterprise_lab]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: ["ALL"]
+
+networks:
+  enterprise_lab:
+    name: enterprise-lab

@@ -1,0 +1,100 @@
+{
+  "schema_version": "document-security-manifest-v1",
+  "policy_version": "enterprise-policy-v1",
+  "documents": [
+    {
+      "corpus": "agentic-rag-course",
+      "relative_path": "00.pdf",
+      "document_id": "course-agentic-rag-00",
+      "tenant_id": "public",
+      "classification": "PUBLIC",
+      "is_public": true,
+      "allowed_purposes": [
+        "learning",
+        "research",
+        "architecture-review",
+        "security-audit"
+      ],
+      "source_version": 1,
+      "policy_version": "enterprise-policy-v1"
+    },
+    {
+      "corpus": "agentic-rag-course",
+      "relative_path": "01.pdf",
+      "document_id": "course-agentic-rag-01",
+      "tenant_id": "public",
+      "classification": "PUBLIC",
+      "is_public": true,
+      "allowed_purposes": [
+        "learning",
+        "research",
+        "architecture-review",
+        "security-audit"
+      ],
+      "source_version": 1,
+      "policy_version": "enterprise-policy-v1"
+    },
+    {
+      "corpus": "agentic-rag-course",
+      "relative_path": "02.pdf",
+      "document_id": "course-agentic-rag-02",
+      "tenant_id": "public",
+      "classification": "PUBLIC",
+      "is_public": true,
+      "allowed_purposes": [
+        "learning",
+        "research",
+        "architecture-review",
+        "security-audit"
+      ],
+      "source_version": 1,
+      "policy_version": "enterprise-policy-v1"
+    },
+    {
+      "corpus": "agentic-rag-course",
+      "relative_path": "04.pdf",
+      "document_id": "course-agentic-rag-04",
+      "tenant_id": "public",
+      "classification": "PUBLIC",
+      "is_public": true,
+      "allowed_purposes": [
+        "learning",
+        "research",
+        "architecture-review",
+        "security-audit"
+      ],
+      "source_version": 1,
+      "policy_version": "enterprise-policy-v1"
+    },
+    {
+      "corpus": "research-papers",
+      "relative_path": "paper1.txt",
+      "document_id": "research-paper-1",
+      "tenant_id": "public",
+      "classification": "PUBLIC",
+      "is_public": true,
+      "allowed_purposes": [
+        "learning",
+        "research",
+        "architecture-review"
+      ],
+      "source_version": 1,
+      "policy_version": "enterprise-policy-v1"
+    },
+    {
+      "corpus": "research-papers",
+      "relative_path": "paper2.txt",
+      "document_id": "research-paper-erag",
+      "tenant_id": "public",
+      "classification": "PUBLIC",
+      "is_public": true,
+      "allowed_purposes": [
+        "learning",
+        "research",
+        "architecture-review"
+      ],
+      "source_version": 1,
+      "policy_version": "enterprise-policy-v1"
+    }
+  ]
+}

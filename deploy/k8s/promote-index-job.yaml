@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agentic-index-promote-${JOB_SUFFIX}
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: promote
+          image: alpine:3.22
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              test -f /source/course/manifest.json
+              test -f /source/papers/manifest.json
+              rm -rf /target/course.new /target/papers.new
+              cp -a /source/course /target/course.new
+              cp -a /source/papers /target/papers.new
+              rm -rf /target/course.backup /target/papers.backup
+              [ ! -d /target/course ] || mv /target/course /target/course.backup
+              [ ! -d /target/papers ] || mv /target/papers /target/papers.backup
+              mv /target/course.new /target/course
+              mv /target/papers.new /target/papers
+              rm -rf /target/course.backup /target/papers.backup
+              echo "Staging RAG indexes promoted to production storage"
+          volumeMounts:
+            - name: source
+              mountPath: /source
+              readOnly: true
+            - name: target
+              mountPath: /target
+      volumes:
+        - name: source
+          persistentVolumeClaim:
+            claimName: agentic-rag-staging-source
+        - name: target
+          persistentVolumeClaim:
+            claimName: agentic-rag-storage

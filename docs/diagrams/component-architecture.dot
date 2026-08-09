@@ -1,0 +1,39 @@
+digraph G {
+  rankdir=LR;
+  graph [fontname="Arial", bgcolor="white", pad="0.3", nodesep="0.55", ranksep="0.8"];
+  node [shape=box, style="rounded,filled", fillcolor="#F7F9FC", color="#425466", fontname="Arial"];
+  edge [color="#596780", fontname="Arial"];
+
+  Client [label="Client / Postman / UI"];
+  API [label="FastAPI\nidentity scope + request ID"];
+  Guard [label="Prompt Guard\ndirect injection signals"];
+  Service [label="AgentService\nbudgets + session + traces"];
+  Cache [label="Tenant/session TTL-LRU Cache\nindex/model/prompt-aware key"];
+  Agent [label="LlamaIndex FunctionAgent\n(or ReActAgent)"];
+  Citation [label="Citation Validator\nIDs + coverage + strict/audit"];
+  CourseTool [label="agentic_rag_course_tool\nretrieval-only"];
+  PaperTool [label="research_paper_rag_tool\nretrieval-only"];
+  OtherTools [label="arXiv / Definition /\nSafe Calculator / Summarizer"];
+  CourseIndex [label="Course Index\nstable node IDs + metadata"];
+  PaperIndex [label="Research Index\nstable node IDs + metadata"];
+  Embedding [label="NVIDIA Embedding API\nquery/passages + truncate policy"];
+  LLM [label="NVIDIA Nemotron 3 Ultra\nreasoning + native tool calling"];
+  Obs [label="Prometheus + JSON logs\ncache/tool/citation metrics"];
+
+  Client -> API -> Guard -> Service;
+  Service -> Cache [dir=both, label="exact response"];
+  Service -> Agent;
+  Agent -> LLM [dir=both];
+  Agent -> CourseTool;
+  Agent -> PaperTool;
+  Agent -> OtherTools;
+  CourseTool -> CourseIndex;
+  PaperTool -> PaperIndex;
+  CourseIndex -> Embedding [dir=both];
+  PaperIndex -> Embedding [dir=both];
+  Service -> Citation;
+  Citation -> API [label="typed response"];
+  Service -> Obs [style=dashed];
+  CourseTool -> Obs [style=dashed];
+  PaperTool -> Obs [style=dashed];
+}

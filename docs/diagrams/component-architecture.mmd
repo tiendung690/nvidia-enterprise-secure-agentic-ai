@@ -1,0 +1,17 @@
+flowchart LR
+    Client --> API[FastAPI: identity scope + request ID]
+    API --> Guard[Prompt guard]
+    Guard --> Service[AgentService: budgets, session, traces]
+    Service <--> Cache[Tenant/session TTL-LRU cache]
+    Service --> Agent[LlamaIndex FunctionAgent / ReActAgent]
+    Agent <--> LLM[NVIDIA Nemotron 3 Ultra]
+    Agent --> CourseTool[Course retrieval-only tool]
+    Agent --> PaperTool[Research retrieval-only tool]
+    Agent --> Other[arXiv / definition / calculator / summarizer]
+    CourseTool --> CourseIndex[Course persisted index]
+    PaperTool --> PaperIndex[Paper persisted index]
+    CourseIndex <--> Embed[NVIDIA embedding API]
+    PaperIndex <--> Embed
+    Service --> Citation[Citation validation]
+    Citation --> API
+    Service -.-> Metrics[Prometheus + JSON logs]
